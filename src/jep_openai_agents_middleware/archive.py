@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
-import threading
+from filelock import FileLock
 from typing import Any, Iterable, Mapping
 from uuid import uuid4
 
@@ -30,12 +30,16 @@ class AppendOnlyArchive:
     """
 
     def __init__(self, path: str | Path):
-        self.path = Path(path)
+        self.path = Path(path).resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.touch(exist_ok=True)
-        self._lock = threading.Lock()
+        self._lock = FileLock(str(self.path) + ".lock")
 
     def read_events(self) -> list[JEPEvent]:
+        with self._lock:
+            return self._read_events()
+
+    def _read_events(self) -> list[JEPEvent]:
         events: list[JEPEvent] = []
         for line_number, line in enumerate(self.path.read_text(encoding="utf-8").splitlines(), start=1):
             if not line.strip():
@@ -48,7 +52,10 @@ class AppendOnlyArchive:
 
     def append(self, event_type: str, run_id: str, payload: Mapping[str, Any]) -> JEPEvent:
         with self._lock:
-            existing = self.read_events()
+            existing = self._read_events()
+            report = VerificationRuntime(self).verify(existing)
+            if not report.valid:
+                raise ValueError("Refusing to append to invalid archive: " + "; ".join(report.errors))
             prev_hash = existing[-1].hash if existing else None
             event = JEPEvent(
                 event_type=event_type,
@@ -87,7 +94,7 @@ class VerificationRuntime:
         errors: list[str] = []
         previous_hash: str | None = None
         terminal_hash: str | None = None
-        for expected_sequence, event in enumerate(events or self.archive.read_events(), start=1):
+        for expected_sequence, event in enumerate(self.archive.read_events() if events is None else events, start=1):
             checked += 1
             if event.sequence != expected_sequence:
                 errors.append(f"sequence mismatch at index {expected_sequence}: got {event.sequence}")

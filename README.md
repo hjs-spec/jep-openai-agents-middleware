@@ -75,3 +75,7 @@ lookup_order("order_123")
 ## Verification model
 
 Events are stored as JSON Lines. The archive is append-only: new events receive a monotonically increasing sequence number and the previous event hash. Hashes are SHA-256 over canonical JSON, so replay verification can detect tampering, missing events, or reordered events.
+
+## Runtime and verification notes
+
+See [HARDENING.md](HARDENING.md) for supported behavior, regression checks, and compatibility boundaries.

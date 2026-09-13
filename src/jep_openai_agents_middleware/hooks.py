@@ -36,20 +36,22 @@ class AgentExecutionHook(_RunHooks):
         self.authority_scope = authority_scope
 
     async def on_agent_start(self, context: Any, agent: Any) -> None:
-        snapshot = self.tracker.start_agent(agent)
+        snapshot = self.tracker.start_agent(agent, context)
         self.runtime.judgment("agent.start", {**snapshot, "authority_scope": self.authority_scope, "context_hash": deterministic_hash(context)})
 
     async def on_agent_end(self, context: Any, agent: Any, output: Any) -> None:
         self.runtime.termination({
             "agent": agent_identity(agent),
-            "lineage": self.tracker.snapshot()["lineage"],
+            "lineage": self.tracker.snapshot(context)["lineage"],
             "authority_scope": self.authority_scope,
             "output_hash": deterministic_hash(output),
             "context_hash": deterministic_hash(context),
         })
 
+        self.tracker.end_agent(agent, context)
+
     async def on_handoff(self, context: Any, from_agent: Any, to_agent: Any) -> None:
-        payload = self.tracker.record_delegation(from_agent, to_agent, kind="handoff", metadata={"context_hash": deterministic_hash(context)})
+        payload = self.tracker.record_delegation(from_agent, to_agent, kind="handoff", metadata={"context_hash": deterministic_hash(context)}, context=context)
         self.runtime.delegation(payload)
 
     async def on_tool_start(self, context: Any, agent: Any, tool: Any) -> None:
@@ -58,7 +60,7 @@ class AgentExecutionHook(_RunHooks):
             "tool": _tool_payload(tool),
             "authority_scope": "tool:local",
             "context_hash": deterministic_hash(context),
-            "lineage": self.tracker.snapshot()["lineage"],
+            "lineage": self.tracker.snapshot(context)["lineage"],
         })
 
     async def on_tool_end(self, context: Any, agent: Any, tool: Any, result: str) -> None:
@@ -68,7 +70,7 @@ class AgentExecutionHook(_RunHooks):
             "authority_scope": "tool:local",
             "result_hash": deterministic_hash(result),
             "context_hash": deterministic_hash(context),
-            "lineage": self.tracker.snapshot()["lineage"],
+            "lineage": self.tracker.snapshot(context)["lineage"],
         })
 
     async def on_llm_start(self, context: Any, agent: Any, system_prompt: str | None, input_items: list[Any]) -> None:
