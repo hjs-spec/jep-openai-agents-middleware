@@ -80,13 +80,23 @@ class JEPEvent:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "JEPEvent":
+        required = {"event_type", "run_id", "sequence", "prev_hash", "payload", "event_id", "created_at", "hash"}
+        if not isinstance(data, Mapping) or set(data) != required:
+            raise ValueError("invalid archive event members")
+        if type(data["sequence"]) is not int or not isinstance(data["payload"], Mapping):
+            raise ValueError("invalid archive event types")
+        for field in ("event_type", "run_id", "event_id", "created_at", "hash"):
+            if not isinstance(data[field], str) or not data[field]:
+                raise ValueError("invalid archive event string")
+        if data["prev_hash"] is not None and not isinstance(data["prev_hash"], str):
+            raise ValueError("invalid previous hash")
         return cls(
-            event_type=str(data["event_type"]),
-            run_id=str(data["run_id"]),
-            sequence=int(data["sequence"]),
+            event_type=data["event_type"],
+            run_id=data["run_id"],
+            sequence=data["sequence"],
             prev_hash=data.get("prev_hash"),
             payload=data.get("payload", {}),
-            event_id=str(data["event_id"]),
-            created_at=str(data["created_at"]),
-            hash=str(data.get("hash", "")),
+            event_id=data["event_id"],
+            created_at=data["created_at"],
+            hash=data["hash"],
         )

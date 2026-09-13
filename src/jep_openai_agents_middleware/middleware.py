@@ -40,6 +40,8 @@ class JEPMiddleware:
 
     def instrument_agent(self, agent: Any) -> Any:
         """Attach JEP agent-scoped hooks and return the same agent instance."""
+        if getattr(agent, "hooks", None) is not None:
+            raise ValueError("agent already has hooks; compose them explicitly before instrumenting")
         setattr(agent, "hooks", self.agent_hooks())
         return agent
 

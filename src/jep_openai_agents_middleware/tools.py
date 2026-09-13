@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import asyncio
 import inspect
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
@@ -53,11 +54,12 @@ class ToolInvocationWrapper:
         if inspect.iscoroutinefunction(func):
             @functools.wraps(func)
             async def async_wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
-                child.runtime.judgment("tool.start", child.start_payload(func, args, kwargs, agent))
+                start = child.start_payload(func, args, kwargs, agent)
+                child.runtime.judgment("tool.start", start)
                 try:
                     result = await func(*args, **kwargs)
-                except Exception as exc:
-                    child.runtime.judgment("tool.error", {**child.start_payload(func, args, kwargs, agent), "error": repr(exc)})
+                except BaseException as exc:
+                    child.runtime.judgment("tool.error", {**start, "error_type": type(exc).__name__, "status": "cancelled" if isinstance(exc, asyncio.CancelledError) else "failed"})
                     raise
                 child.runtime.judgment("tool.end", child.end_payload(func, result, agent))
                 return result
@@ -66,11 +68,12 @@ class ToolInvocationWrapper:
 
         @functools.wraps(func)
         def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
-            child.runtime.judgment("tool.start", child.start_payload(func, args, kwargs, agent))
+            start = child.start_payload(func, args, kwargs, agent)
+            child.runtime.judgment("tool.start", start)
             try:
                 result = func(*args, **kwargs)
-            except Exception as exc:
-                child.runtime.judgment("tool.error", {**child.start_payload(func, args, kwargs, agent), "error": repr(exc)})
+            except BaseException as exc:
+                child.runtime.judgment("tool.error", {**start, "error_type": type(exc).__name__, "status": "cancelled" if isinstance(exc, asyncio.CancelledError) else "failed"})
                 raise
             child.runtime.judgment("tool.end", child.end_payload(func, result, agent))
             return result
