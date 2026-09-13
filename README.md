@@ -1,16 +1,24 @@
 # jep-openai-agents-middleware
 
-JEP middleware for the OpenAI Agents SDK: portable and replayable AI judgment verification.
+Execution observation and replay archives for the OpenAI Agents SDK.
 
-This package adds **portable accountability semantics** to OpenAI agent execution without forking the OpenAI Agents SDK and without changing SDK core semantics. It observes lifecycle hooks and wraps local tool callables to write deterministic, append-only JEP events.
+This package observes SDK lifecycle hooks and wraps local tool callables without forking the SDK or changing its core semantics. It records execution metadata, declared delegation, and authority scope in a local hash-linked JSONL archive.
+
+## Event format and verification scope
+
+This package emits **local execution-observation envelopes**, not signed [JEP-Core v0.6](https://github.com/hjs-spec/jep-v06) wire events. Its `event_type`, `run_id`, `sequence`, `prev_hash`, and `payload` fields belong to the middleware archive format. It does not produce detached-JWS signatures or perform Core signature and key-trust validation. Core interoperability requires a separately specified mapping and signing implementation.
+
+`middleware.verify_replay().valid` reports sequence, previous-hash, and payload-hash consistency within the supplied archive. It does not establish actor identity, permission to act, the correctness of a model response, or the truth of an external claim. Declared authority scope and approval-related records do not themselves enforce authorization.
 
 ## What is recorded
 
-The middleware automatically generates:
+The middleware maps observed callbacks and explicit instrumentation to local event labels:
 
 - **Judgment events** for agent starts, LLM calls, tool starts/ends/errors, approval-required execution, and other local execution decisions.
 - **Delegation events** for handoffs and explicit sub-agent delegation.
 - **Termination events** when an agent produces final output.
+
+These labels describe the middleware's instrumentation mapping. For example, recording an agent start as a judgment event does not establish that a substantive external decision occurred.
 
 Each event can include:
 
@@ -74,7 +82,11 @@ lookup_order("order_123")
 
 ## Verification model
 
-Events are stored as JSON Lines. The archive is append-only: new events receive a monotonically increasing sequence number and the previous event hash. Hashes are SHA-256 over canonical JSON, so replay verification can detect tampering, missing events, or reordered events.
+Events are stored as JSON Lines. The writer assigns increasing sequence numbers and links each new event to the previous hash. Hashes use SHA-256 over this package's deterministic JSON serialization; this is not a claim of JEP-Core canonicalization conformance.
+
+Replay reports edits, gaps, or reordering when they break the checked hashes, sequence, or links. A successful result concerns the supplied records, not proof that every execution event was captured.
+
+The writer appends records, but an unkeyed hash chain alone cannot rule out a complete rewrite or removal of a valid suffix. Detecting those changes requires an independently trusted checkpoint or other external evidence of the expected history.
 
 ## Runtime and verification notes
 
