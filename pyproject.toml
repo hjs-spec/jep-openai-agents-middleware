@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jep-openai-agents-middleware"
-version = "0.1.0"
+version = "0.1.1"
 description = "JEP middleware for OpenAI Agents SDK portable accountability semantics."
 readme = "README.md"
 requires-python = ">=3.10"
