@@ -1,5 +1,14 @@
 # jep-openai-agents-middleware
 
+> **Maintenance: retired experiment — 2026-09-26.** Active feature development
+> has ended. Source history, releases, examples and existing archive readers are
+> retained for reproduction. Package names and historical formats are unchanged.
+
+The unsigned Agents SDK RunHooks archive and instrumentation remain available here. The maintained Agent SDK provides signed callable recording, not an equivalent RunHooks implementation or an old-archive decoder.
+
+For new signed Core integrations, use the [maintained recording and report path](https://github.com/hjs-spec/jep-agent-sdk/blob/main/docs/INTEGRATIONS.md).
+See the [repository directory](https://github.com/hjs-spec/.github/blob/main/PROJECTS.md#retired-experiments) for maintenance status. No automatic archive migration is provided.
+
 Execution observation and replay archives for the OpenAI Agents SDK.
 
 This package observes SDK lifecycle hooks and wraps local tool callables without forking the SDK or changing its core semantics. It records execution metadata, declared delegation, and authority scope in a local hash-linked JSONL archive.
