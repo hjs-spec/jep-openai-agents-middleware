@@ -6,7 +6,7 @@ This package observes SDK lifecycle hooks and wraps local tool callables without
 
 ## Event format and verification scope
 
-This package emits **local execution-observation envelopes**, not signed [JEP-Core v0.6](https://github.com/hjs-spec/jep-v06) wire events. Its `event_type`, `run_id`, `sequence`, `prev_hash`, and `payload` fields belong to the middleware archive format. It does not produce detached-JWS signatures or perform Core signature and key-trust validation. Core interoperability requires a separately specified mapping and signing implementation.
+This package emits **local execution-observation envelopes**, not signed [JEP Core 0.7](https://github.com/hjs-spec/jep-core) wire events. Its `event_type`, `run_id`, `sequence`, `prev_hash`, and `payload` fields belong to the middleware archive format. It does not produce detached-JWS signatures or perform Core signature and key-trust validation. Core interoperability requires a separately specified mapping and signing implementation.
 
 `middleware.verify_replay().valid` reports sequence, previous-hash, and payload-hash consistency within the supplied archive. It does not establish actor identity, permission to act, the correctness of a model response, or the truth of an external claim. Declared authority scope and approval-related records do not themselves enforce authorization.
 
